@@ -310,7 +310,8 @@ const SubmitUTR = ({ clearCart, cart, customerInfo }) => {
         data.append('screenshot', screenshot);
       }
 
-      await fetch('http://localhost:5000/api/send-invoice', {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      await fetch(`${backendUrl}/api/send-invoice`, {
         method: 'POST',
         body: data
       });
