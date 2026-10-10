@@ -1,30 +1,76 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useParams } from 'react-router-dom';
-import { ShoppingCart, Check, Upload, Trash2, ArrowRight } from 'lucide-react';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useParams, useLocation } from 'react-router-dom';
+import toast, { Toaster } from 'react-hot-toast';
+import { ShoppingCart, Check, Upload, Trash2, ArrowRight, Mail, Send, Phone, Search, Menu, X } from 'lucide-react';
 import { products, categories } from './data';
 import './index.css';
 
 // Components
-const Navbar = ({ cartItemCount }) => (
-  <nav className="navbar">
-    <div className="container">
-      <Link to="/" className="logo">IMRAN SOFTWARES</Link>
-      <div className="nav-links">
-        <Link to="/">Home</Link>
-        <Link to="/products">All Products</Link>
-        <Link to="/cart" className="cart-icon">
-          <ShoppingCart size={24} />
-          {cartItemCount > 0 && <span className="cart-badge">{cartItemCount}</span>}
-        </Link>
+const Navbar = ({ cartItemCount, cartTotal }) => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  return (
+    <nav className="navbar">
+      <div className="container nav-container">
+        <div className="nav-top-row">
+          <div className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            {isMobileMenuOpen ? <X size={28} color="#fff" /> : <Menu size={28} color="#fff" />}
+          </div>
+          
+          <Link to="/" className="logo-container" style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <span className="logo-text" style={{ fontSize: '32px', fontWeight: '900', letterSpacing: '-0.5px' }}>
+              <span style={{ color: '#00f2fe', textShadow: '0 0 15px rgba(0,242,254,0.4)' }}>Imran </span>
+              <span style={{ color: '#ffffff' }}>Softkart</span>
+            </span>
+          </Link>
+          
+          <div className="nav-actions">
+            <div className="search-icon hide-on-mobile">
+              <Search size={20} color="#fff" />
+            </div>
+            <div className="nav-divider hide-on-mobile"></div>
+            <Link to="/cart" className="cart-action">
+              <span className="cart-price hide-on-mobile">₹{cartTotal ? cartTotal.toFixed(2) : '0.00'}</span>
+              <div className="cart-icon-wrapper">
+                <ShoppingCart size={22} color="#fcd34d" />
+                <span className="cart-badge">{cartItemCount}</span>
+              </div>
+            </Link>
+          </div>
+        </div>
+
+        <div className={`nav-links ${isMobileMenuOpen ? 'open' : ''}`}>
+          <Link to="/" onClick={() => setIsMobileMenuOpen(false)}>HOME</Link>
+          <Link to="/about" onClick={() => setIsMobileMenuOpen(false)}>ABOUT</Link>
+          <Link to="/products" onClick={() => setIsMobileMenuOpen(false)}>ALL PRODUCTS</Link>
+          <Link to="/faqs" onClick={() => setIsMobileMenuOpen(false)}>FAQS</Link>
+          <Link to="/contact" onClick={() => setIsMobileMenuOpen(false)}>CONTACT US</Link>
+        </div>
       </div>
-    </div>
-  </nav>
-);
+    </nav>
+  );
+};
+
+
 
 const Footer = () => (
   <footer className="footer">
     <div className="container">
-      <p>&copy; 2026 Imran Softwares. All Rights Reserved.</p>
+      <div style={{ marginBottom: '25px', padding: '20px', background: 'rgba(0,0,0,0.3)', borderRadius: '12px', display: 'inline-block' }}>
+        <h3 style={{ color: '#fff', marginBottom: '20px' }}>Contact Admin</h3>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '25px' }}>
+          <a href="mailto:jaffuvlogs@gmail.com" title="Email Admin" style={{ color: 'var(--primary)', padding: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', display: 'flex', transition: 'all 0.3s ease', boxShadow: '0 0 10px rgba(0, 242, 254, 0.1)' }}>
+            <Mail size={24} />
+          </a>
+          <a href="https://t.me/mistersystemservice" target="_blank" rel="noopener noreferrer" title="Telegram Admin" style={{ color: 'var(--primary)', padding: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', display: 'flex', transition: 'all 0.3s ease', boxShadow: '0 0 10px rgba(0, 242, 254, 0.1)' }}>
+            <Send size={24} />
+          </a>
+          <a href="tel:+917661869592" title="Call Admin" style={{ color: 'var(--primary)', padding: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', display: 'flex', transition: 'all 0.3s ease', boxShadow: '0 0 10px rgba(0, 242, 254, 0.1)' }}>
+            <Phone size={24} />
+          </a>
+        </div>
+      </div>
+      <p>&copy; {new Date().getFullYear()} Imran Softwares. All Rights Reserved.</p>
     </div>
   </footer>
 );
@@ -35,44 +81,71 @@ const ProductCard = ({ product }) => (
       <img src={product.image} alt={product.name} className="product-img" />
     </Link>
     <div className="product-info">
-      <div className="product-category">{product.category}</div>
+      <div className="product-category">PRE-ACTIVATED</div>
       <h3 className="product-title">
         <Link to={`/product/${product.id}`}>{product.name}</Link>
       </h3>
       <div className="product-price-row">
-        <span className="price">₹{product.price}</span>
         <span className="original-price">₹{product.originalPrice}</span>
+        <span className="price">₹{product.price}</span>
       </div>
-      <Link to={`/product/${product.id}`} className="btn-primary" style={{ width: '100%', textAlign: 'center' }}>
-        View Details
-      </Link>
     </div>
   </div>
 );
 
 // Pages
-const Home = () => (
-  <div>
-    <div className="hero">
-      <div className="container">
-        <h1>Premium Pre-Activated Software</h1>
-        <p>Get lifetime valid software delivered instantly to your Google Drive. 100% secure and authentic.</p>
-        <Link to="/products" className="btn-primary">Shop Now</Link>
+const Home = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      navigate(`/products?search=${encodeURIComponent(searchQuery)}`);
+    } else {
+      navigate('/products');
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ padding: '80px 20px 40px' }}>
+        <div style={{ display: 'flex', maxWidth: '1000px', margin: '0 auto', height: '80px' }}>
+          <input 
+            type="text" 
+            placeholder="Type to start searching..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            style={{ flex: 1, padding: '0 30px', fontSize: '20px', backgroundColor: '#000', border: '1px solid #333', color: '#fff', outline: 'none' }} 
+          />
+          <button 
+            onClick={handleSearch}
+            style={{ background: 'var(--primary-gradient)', color: '#000', border: 'none', padding: '0 40px', fontSize: '22px', fontWeight: '800', cursor: 'pointer', textTransform: 'uppercase' }}>
+            Search
+          </button>
+        </div>
+      </div>
+      <div className="products-section container">
+        <h2 className="section-title">Featured Products</h2>
+        <div className="product-grid">
+          {products.slice(0, 5).map(p => <ProductCard key={p.id} product={p} />)}
+        </div>
       </div>
     </div>
-    <div className="products-section container">
-      <h2 className="section-title">Featured Products</h2>
-      <div className="product-grid">
-        {products.slice(0, 4).map(p => <ProductCard key={p.id} product={p} />)}
-      </div>
-    </div>
-  </div>
-);
+  );
+};
 
 const AllProducts = () => {
   const [activeCat, setActiveCat] = useState("All");
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const searchQuery = searchParams.get('search') || '';
   
-  const filtered = activeCat === "All" ? products : products.filter(p => p.category === activeCat);
+  const filtered = products.filter(p => {
+    const matchesCat = activeCat === "All" || p.category === activeCat;
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCat && matchesSearch;
+  });
   
   return (
     <div className="container page-container">
@@ -203,7 +276,7 @@ const Checkout = ({ cart, setCustomerInfo }) => {
       email: formData.get('email'),
       whatsapp: formData.get('whatsapp')
     });
-    navigate('/payment');
+    navigate('/instructions');
   };
   
   return (
@@ -254,6 +327,75 @@ const Checkout = ({ cart, setCustomerInfo }) => {
   );
 };
 
+const PaymentInstructions = () => {
+  const navigate = useNavigate();
+  const [agreed, setAgreed] = useState(false);
+
+  return (
+    <div className="container page-container">
+      <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+        <h1 style={{ textAlign: 'center', marginBottom: '20px' }}>How to Purchase & Download (A-Z)</h1>
+        <div className="order-summary" style={{ textAlign: 'left', padding: '30px' }}>
+          <h3 style={{ color: 'var(--primary)', marginBottom: '20px', borderBottom: '1px solid rgba(0, 242, 254, 0.2)', paddingBottom: '10px' }}>Please read these instructions carefully:</h3>
+          <ul style={{ paddingLeft: '0', listStyleType: 'none', color: 'var(--text-main)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <li>
+              <strong style={{ color: '#fff', fontSize: '16px' }}>1. View the QR Code:</strong><br/>
+              <span style={{ color: 'var(--text-muted)' }}>Click "Agree & Proceed" below. On the next screen, you will see our official UPI QR code.</span>
+            </li>
+            <li>
+              <strong style={{ color: '#fff', fontSize: '16px' }}>2. Scan & Pay:</strong><br/>
+              <span style={{ color: 'var(--text-muted)' }}>Open your UPI app (Google Pay, PhonePe, Paytm, etc.) and scan the QR code to pay the exact amount.</span>
+            </li>
+            <li>
+              <strong style={{ color: '#fff', fontSize: '16px' }}>3. Take a Screenshot (Important):</strong><br/>
+              <span style={{ color: 'var(--text-muted)' }}>After the payment is successful, take a screenshot. <strong>Make sure the UTR / Transaction ID is visible.</strong></span>
+            </li>
+            <li>
+              <strong style={{ color: '#fff', fontSize: '16px' }}>4. Upload the Screenshot:</strong><br/>
+              <span style={{ color: 'var(--text-muted)' }}>Click the "I have made the payment" button below the QR code and upload your screenshot on the submission page.</span>
+            </li>
+            <li>
+              <strong style={{ color: '#fff', fontSize: '16px' }}>5. Automated Email & Verification:</strong><br/>
+              <span style={{ color: 'var(--text-muted)' }}>As soon as you submit, you will instantly receive an email. Our team will verify the payment within minutes.</span>
+            </li>
+            <li>
+              <strong style={{ color: '#fff', fontSize: '16px' }}>6. Get Software Access:</strong><br/>
+              <span style={{ color: 'var(--text-muted)' }}>Inside your confirmation email, you will find a Google Drive link. Simply click it to <strong>request access</strong>. Our Admin will check your payment verification and then instantly give you Drive access to download the software!</span>
+            </li>
+          </ul>
+          
+          <div style={{ marginTop: '30px', padding: '15px', backgroundColor: 'rgba(0, 242, 254, 0.05)', borderRadius: '8px', border: '1px solid rgba(0, 242, 254, 0.2)', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+            <input 
+              type="checkbox" 
+              id="agree-terms" 
+              checked={agreed} 
+              onChange={(e) => setAgreed(e.target.checked)}
+              style={{ marginTop: '4px', width: '22px', height: '22px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+            />
+            <label htmlFor="agree-terms" style={{ cursor: 'pointer', color: '#fff', lineHeight: '1.5', fontSize: '15px' }}>
+              I have read and understood all the steps above. I know how to pay and submit the transaction screenshot to receive my software.
+            </label>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '15px', marginTop: '25px', justifyContent: 'center' }}>
+            <button className="btn-secondary" onClick={() => navigate('/checkout')} style={{ flex: '1', padding: '15px' }}>
+              Deny (Go Back)
+            </button>
+            <button 
+              className="btn-primary" 
+              onClick={() => navigate('/payment')} 
+              disabled={!agreed}
+              style={{ flex: '1', padding: '15px', opacity: agreed ? 1 : 0.5, cursor: agreed ? 'pointer' : 'not-allowed' }}
+            >
+              Agree & Proceed
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Payment = ({ cart }) => {
   const navigate = useNavigate();
   const total = cart.reduce((sum, item) => sum + item.price, 0);
@@ -265,12 +407,12 @@ const Payment = ({ cart }) => {
         <div className="payment-qr">
           <h3>Scan and Pay with any UPI App</h3>
           <p style={{ color: 'var(--text-muted)', margin: '10px 0' }}>Paytm, PhonePe, GPay, BHIM</p>
-          <img src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay?pa=imran@upi&pn=ImranSoftwares&am=${total}&cu=INR`} alt="UPI QR Code" />
+          <img src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`upi://pay?pa=shaikjaffaralli1@ybl&pn=ImranSoftwares&am=${total}&cu=INR`)}`} alt="UPI QR Code" />
           <div style={{ fontSize: '24px', fontWeight: 'bold', margin: '20px 0' }}>₹{total}</div>
-          <p style={{ color: 'var(--success)', fontWeight: 'bold' }}>UPI ID: imran@upi</p>
+          <p style={{ color: 'var(--success)', fontWeight: 'bold' }}>UPI ID: shaikjaffaralli1@ybl</p>
         </div>
         <div style={{ textAlign: 'center', marginTop: '30px' }}>
-          <button className="btn-primary" onClick={() => navigate('/submit-utr')} style={{ width: '100%' }}>
+          <button className="btn-primary" onClick={() => navigate('/submit-payment')} style={{ width: '100%' }}>
             I have made the payment <ArrowRight size={18} style={{ verticalAlign: 'middle', marginLeft: '5px' }} />
           </button>
         </div>
@@ -279,7 +421,7 @@ const Payment = ({ cart }) => {
   );
 };
 
-const SubmitUTR = ({ clearCart, cart, customerInfo }) => {
+const SubmitPayment = ({ clearCart, cart, customerInfo }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [screenshot, setScreenshot] = useState(null);
@@ -293,8 +435,7 @@ const SubmitUTR = ({ clearCart, cart, customerInfo }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const formDataUI = new FormData(e.target);
-    const utr = formDataUI.get('utr');
+    const driveEmail = customerInfo.email;
     
     setLoading(true);
 
@@ -303,7 +444,7 @@ const SubmitUTR = ({ clearCart, cart, customerInfo }) => {
       data.append('email', customerInfo.email);
       data.append('name', customerInfo.name);
       data.append('whatsapp', customerInfo.whatsapp);
-      data.append('utr', utr);
+      data.append('driveEmail', driveEmail);
       data.append('cartData', JSON.stringify(cart));
       data.append('total', total);
       if (screenshot) {
@@ -311,12 +452,15 @@ const SubmitUTR = ({ clearCart, cart, customerInfo }) => {
       }
 
       const backendUrl = import.meta.env.VITE_BACKEND_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
-      await fetch(`${backendUrl}/api/send-invoice`, {
+      
+      // Fire and forget - do not await so the UI responds instantly
+      fetch(`${backendUrl}/api/send-invoice`, {
         method: 'POST',
         body: data
-      });
+      }).catch(err => console.error("Background upload failed:", err));
+      
     } catch (err) {
-      console.error("Failed to send email API request", err);
+      console.error("Failed to prepare API request", err);
     }
     
     setLoading(false);
@@ -332,11 +476,7 @@ const SubmitUTR = ({ clearCart, cart, customerInfo }) => {
           <p style={{ marginBottom: '20px', color: 'var(--text-muted)' }}>
             Please provide your transaction details. Once you submit, we will email your invoice directly to <strong>{customerInfo?.email || 'your email'}</strong>.
           </p>
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label>12-Digit UTR / Transaction Reference Number</label>
-              <input type="text" name="utr" required placeholder="e.g. 312412345678" />
-            </div>
+            <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label>Upload Payment Screenshot</label>
               <label style={{ 
@@ -389,13 +529,13 @@ const OrderSuccess = () => (
     </div>
     <h1 style={{ marginBottom: '20px' }}>Order Submitted Successfully!</h1>
     <p style={{ color: 'var(--text-muted)', maxWidth: '600px', margin: '0 auto 30px', fontSize: '18px' }}>
-      Thank you for your purchase! We have sent the initial invoice to your email. Our admin is verifying your payment against your UTR.
+      Thank you for your purchase! We have sent the initial invoice to your email. Our admin is verifying your payment.
     </p>
     <div className="order-summary" style={{ maxWidth: '400px', margin: '0 auto 30px', textAlign: 'left' }}>
       <h3 style={{ marginBottom: '15px', color: 'var(--primary)' }}>Next Steps:</h3>
       <ol style={{ paddingLeft: '20px', color: 'var(--text-main)', lineHeight: '1.8' }}>
-        <li>Admin verifies UTR & Payment (5-10 mins)</li>
-        <li>Access granted to provided Gmail</li>
+        <li>Admin verifies Payment (5-10 mins)</li>
+        <li>Access granted to provided Google Drive Email</li>
         <li>Check your email inbox / Google Drive</li>
         <li>Download & install your software</li>
       </ol>
@@ -411,12 +551,18 @@ const App = () => {
   
   const addToCart = (product) => {
     setCart([...cart, product]);
+    toast.success(`${product.name} added to cart!`, {
+      icon: '🛒',
+    });
   };
   
   const removeFromCart = (index) => {
     const newCart = [...cart];
-    newCart.splice(index, 1);
+    const removedItem = newCart.splice(index, 1)[0];
     setCart(newCart);
+    toast.error(`${removedItem.name} removed`, {
+      style: { border: '1px solid #ef4444' }
+    });
   };
   
   const clearCart = () => {
@@ -425,20 +571,72 @@ const App = () => {
 
   return (
     <Router>
-      <Navbar cartItemCount={cart.length} />
+      <Toaster 
+        position="bottom-center"
+        toastOptions={{
+          style: {
+            background: 'rgba(30, 41, 59, 0.9)',
+            color: '#fff',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(0, 242, 254, 0.2)'
+          },
+        }}
+      />
+      <Navbar cartItemCount={cart.length} cartTotal={cart.reduce((total, item) => total + item.price, 0)} />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/products" element={<AllProducts />} />
         <Route path="/product/:id" element={<ProductDetail addToCart={addToCart} />} />
         <Route path="/cart" element={<Cart cart={cart} removeFromCart={removeFromCart} />} />
         <Route path="/checkout" element={<Checkout cart={cart} setCustomerInfo={setCustomerInfo} />} />
+        <Route path="/instructions" element={<PaymentInstructions />} />
         <Route path="/payment" element={<Payment cart={cart} />} />
-        <Route path="/submit-utr" element={<SubmitUTR clearCart={clearCart} cart={cart} customerInfo={customerInfo} />} />
+        <Route path="/submit-payment" element={<SubmitPayment clearCart={clearCart} cart={cart} customerInfo={customerInfo} />} />
         <Route path="/order-success" element={<OrderSuccess />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/faqs" element={<Faqs />} />
+        <Route path="/contact" element={<Contact />} />
       </Routes>
       <Footer />
     </Router>
   );
 };
+
+// Simple functional pages for the new nav links
+const About = () => (
+  <div className="container page-container" style={{ minHeight: '50vh', textAlign: 'center', paddingTop: '100px' }}>
+    <h1 className="section-title">About Imran Softkart</h1>
+    <p style={{ color: 'var(--text-muted)', fontSize: '18px', maxWidth: '600px', margin: '0 auto' }}>
+      We are dedicated to providing you with premium, pre-activated software with lifetime validity. Our goal is to make professional software accessible and easy to install for everyone.
+    </p>
+  </div>
+);
+
+const Faqs = () => (
+  <div className="container page-container" style={{ minHeight: '50vh', textAlign: 'center', paddingTop: '100px' }}>
+    <h1 className="section-title">Frequently Asked Questions</h1>
+    <div style={{ color: 'var(--text-muted)', fontSize: '18px', maxWidth: '600px', margin: '0 auto', textAlign: 'left' }}>
+      <h3 style={{ color: '#fff', marginBottom: '10px' }}>Q: How do I receive my software?</h3>
+      <p style={{ marginBottom: '20px' }}>A: After successful payment verification, you will receive an email granting you direct access to download the software from Google Drive.</p>
+      
+      <h3 style={{ color: '#fff', marginBottom: '10px' }}>Q: Are the licenses lifetime?</h3>
+      <p>A: Yes, all our software comes pre-activated and is valid for a lifetime without any subscription fees.</p>
+    </div>
+  </div>
+);
+
+const Contact = () => (
+  <div className="container page-container" style={{ minHeight: '50vh', textAlign: 'center', paddingTop: '100px' }}>
+    <h1 className="section-title">Contact Support</h1>
+    <p style={{ color: 'var(--text-muted)', fontSize: '18px', marginBottom: '30px' }}>
+      Have an issue with your order? Our support team is here to help!
+    </p>
+    <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
+      <a href="mailto:jaffuvlogs@gmail.com" className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><Mail size={20} /> Email Us</a>
+      <a href="https://t.me/mistersystemservice" target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ background: '#0088cc', color: '#fff', display: 'flex', alignItems: 'center', gap: '10px' }}><Send size={20} /> Telegram Support</a>
+      <a href="tel:+917661869592" className="btn-primary" style={{ background: '#25D366', color: '#fff', display: 'flex', alignItems: 'center', gap: '10px' }}><Phone size={20} /> Call Us</a>
+    </div>
+  </div>
+);
 
 export default App;
