@@ -16,25 +16,29 @@ app.use(express.json());
 const upload = multer({ storage: multer.memoryStorage() });
 
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: process.env.SMTP_PORT || 587,
-  secure: false, 
+  service: 'gmail',
   auth: {
-    user: process.env.SMTP_USER || 'your-email@gmail.com',
-    pass: process.env.SMTP_PASS || 'your-app-password',
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
   },
 });
 
 app.post('/api/send-invoice', upload.single('screenshot'), async (req, res) => {
   try {
-    const { email, name, whatsapp, utr, cartData, total } = req.body;
+    const { email, name, whatsapp, driveEmail, cartData, total } = req.body;
     const cart = JSON.parse(cartData);
 
     if (!email) {
       return res.status(400).json({ error: 'Email is required' });
     }
 
-    // Create beautiful items table for invoice
+    // Immediately respond to the client to make the UI feel fast
+    res.status(200).json({ success: true, message: 'Order is being processed in the background' });
+
+    // Process the rest asynchronously in the background
+    (async () => {
+      try {
+        // Create beautiful items table for invoice
     const invoiceItemsHtml = cart.map(item => `
       <tr>
         <td style="padding: 12px; border-bottom: 1px solid #334155; color: #e2e8f0;">${item.name}</td>
@@ -52,97 +56,120 @@ app.post('/api/send-invoice', upload.single('screenshot'), async (req, res) => {
       });
     }
 
+    const productNames = cart.map(item => item.name).join(', ');
+
     const mailOptions = {
-      from: `"Imran Softwares" <${process.env.SMTP_USER}>`,
+      from: `"Imran Softkart" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: 'Invoice & Order Confirmation - Imran Softwares',
+      subject: 'Order Received & Under Review - Imran Softkart',
       html: `
         <!DOCTYPE html>
         <html>
-        <body style="margin: 0; padding: 0; background-color: #070b19; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #ffffff;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #070b19; padding: 40px 0;">
+        <head>
+          <meta charset="utf-8">
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #030712; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #030712; padding: 40px 10px;">
             <tr>
               <td align="center">
-                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #111827; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #1f2937;">
+                <!-- Main Card -->
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #0f172a; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #1e293b;">
                   
-                  <!-- Header -->
+                  <!-- Gradient Header -->
                   <tr>
-                    <td style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 40px 30px; text-align: center;">
-                      <h1 style="color: #000000; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">Imran Softwares</h1>
-                      <p style="color: rgba(0,0,0,0.7); margin: 10px 0 0 0; font-size: 16px; font-weight: 600;">OFFICIAL INVOICE & RECEIPT</p>
+                    <td style="background: linear-gradient(135deg, #00f2fe 0%, #1e3a8a 100%); padding: 45px 30px; text-align: center;">
+                      <h1 style="color: #ffffff; margin: 0; font-size: 36px; font-weight: 900; letter-spacing: -1px; text-shadow: 0 4px 10px rgba(0,0,0,0.3);">Imran Softkart</h1>
+                      <p style="color: #e0f2fe; margin: 12px 0 0 0; font-size: 15px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px;">Order Received & Under Review</p>
                     </td>
                   </tr>
 
-                  <!-- Greeting -->
+                  <!-- Hero Message -->
                   <tr>
-                    <td style="padding: 40px 30px 20px 30px;">
-                      <h2 style="margin: 0 0 15px 0; color: #00f2fe; font-size: 24px;">Hello ${name || 'Valued Customer'},</h2>
-                      <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #94a3b8;">
-                        Thank you for your recent purchase. We have received your order details and your UTR transaction ID: <strong style="color: #fff;">${utr}</strong>.
+                    <td style="padding: 40px 40px 10px 40px; text-align: center;">
+                      <div style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 50px; display: inline-block; padding: 10px 20px; margin-bottom: 25px;">
+                        <span style="color: #34d399; font-weight: bold; font-size: 14px;">✓ Order Successfully Placed</span>
+                      </div>
+                      <h2 style="margin: 0 0 20px 0; color: #ffffff; font-size: 26px; font-weight: 800;">Hi ${name || 'there'}, we're thrilled to have you! 🎉</h2>
+                      <p style="margin: 0 0 25px 0; font-size: 16px; line-height: 1.8; color: #94a3b8; text-align: left;">
+                        Thank you for choosing Imran Softkart for your premium software needs. We have received your order for <strong style="color: #38bdf8;">${productNames}</strong>. 
+                        Our billing team is currently performing a quick security check and verifying your payment.
                       </p>
-                      ${req.file ? '<p style="margin: 0 0 20px 0; font-size: 14px; color: #10b981;">✓ Payment screenshot successfully attached to your order.</p>' : ''}
+                      ${req.file ? '<p style="margin: 0 0 25px 0; font-size: 14px; color: #34d399; font-weight: bold; text-align: left;">📎 Your payment screenshot has been securely attached.</p>' : ''}
+
+                      ${productNames.includes('Windows 11 Pro Lifetime') ? `
+                      <div style="background-color: #064e3b; border-radius: 12px; padding: 20px; border: 1px solid #059669; text-align: center; margin-bottom: 25px;">
+                        <h3 style="margin: 0 0 10px 0; color: #10b981; font-size: 18px;">Automated Delivery - Windows 11 Pro</h3>
+                        <p style="color: #ecfdf5; margin: 0 0 15px 0; font-size: 15px; line-height: 1.5;">Please click the button below to request access to your Windows 11 Pro Lifetime software.<br>Ensure you are signed into your Drive email (<strong style="color: #6ee7b7;">${driveEmail}</strong>) when requesting.</p>
+                        <a href="https://drive.google.com/file/d/1zIVFPLI4PyBYG26mZv9dxTmX1eALn4tj/view?usp=drive_link" target="_blank" style="display: inline-block; padding: 12px 24px; background-color: #10b981; color: #022c22; text-decoration: none; font-weight: bold; border-radius: 6px; margin-top: 5px;">Request Drive Access</a>
+                      </div>
+                      ` : ''}
                     </td>
                   </tr>
-
-                  <!-- Invoice Details -->
+                  <!-- Timeline / What happens next -->
                   <tr>
-                    <td style="padding: 0 30px 30px 30px;">
-                      <div style="background-color: #1f2937; border-radius: 8px; padding: 25px;">
+                    <td style="padding: 0 40px 30px 40px;">
+                      <div style="background-color: #1e293b; border-radius: 12px; padding: 30px; border: 1px solid #334155;">
+                        <h3 style="margin: 0 0 20px 0; color: #fcd34d; font-size: 18px; text-transform: uppercase; letter-spacing: 1px;">What Happens Next?</h3>
+                        
                         <table width="100%" cellpadding="0" cellspacing="0">
                           <tr>
+                            <td width="30" valign="top" style="padding-bottom: 15px; font-size: 20px;">⏳</td>
                             <td style="padding-bottom: 15px;">
-                              <h3 style="margin: 0; color: #00f2fe; font-size: 18px; text-transform: uppercase; letter-spacing: 1px;">Invoice Details</h3>
-                            </td>
-                            <td style="padding-bottom: 15px; text-align: right;">
-                              <p style="margin: 0; color: #94a3b8; font-size: 14px;">Date: ${new Date().toLocaleDateString()}</p>
+                              <strong style="color: #ffffff; font-size: 15px;">Step 1: Payment Verification</strong><br>
+                              <span style="color: #94a3b8; font-size: 14px;">We manually verify your transaction (usually takes 5–15 mins).</span>
                             </td>
                           </tr>
-                        </table>
-                        
-                        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 10px;">
-                          <thead>
-                            <tr>
-                              <th style="padding: 12px; border-bottom: 2px solid #00f2fe; text-align: left; color: #94a3b8; font-size: 14px; text-transform: uppercase;">Product</th>
-                              <th style="padding: 12px; border-bottom: 2px solid #00f2fe; text-align: center; color: #94a3b8; font-size: 14px; text-transform: uppercase;">Qty</th>
-                              <th style="padding: 12px; border-bottom: 2px solid #00f2fe; text-align: right; color: #94a3b8; font-size: 14px; text-transform: uppercase;">Price</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            ${invoiceItemsHtml}
-                          </tbody>
-                          <tfoot>
-                            <tr>
-                              <td colspan="2" style="padding: 20px 12px 0 12px; text-align: right; font-weight: bold; color: #ffffff; font-size: 18px;">Total Paid:</td>
-                              <td style="padding: 20px 12px 0 12px; text-align: right; font-weight: bold; color: #00f2fe; font-size: 20px;">₹${total}</td>
-                            </tr>
-                          </tfoot>
+                          <tr>
+                            <td width="30" valign="top" style="padding-bottom: 15px; font-size: 20px;">🚀</td>
+                            <td style="padding-bottom: 15px;">
+                              <strong style="color: #ffffff; font-size: 15px;">Step 2: Instant Access Granted</strong><br>
+                              <span style="color: #94a3b8; font-size: 14px;">You'll receive a second email with your exclusive Google Drive link.</span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td width="30" valign="top" style="font-size: 20px;">💻</td>
+                            <td>
+                              <strong style="color: #ffffff; font-size: 15px;">Step 3: Download & Enjoy</strong><br>
+                              <span style="color: #94a3b8; font-size: 14px;">Download your lifetime, pre-activated software directly to: <strong style="color: #38bdf8;">${driveEmail}</strong>.</span>
+                            </td>
+                          </tr>
                         </table>
                       </div>
                     </td>
                   </tr>
 
-                  <!-- Next Steps -->
+                  <!-- Order Summary -->
                   <tr>
-                    <td style="padding: 0 30px 40px 30px;">
-                      <h3 style="margin: 0 0 15px 0; color: #f093fb; font-size: 20px;">What happens next?</h3>
-                      <p style="margin: 0 0 15px 0; font-size: 15px; line-height: 1.6; color: #e2e8f0;">
-                        Our billing team is currently manually verifying your payment against the provided UTR. This process usually takes <strong>5 to 15 minutes</strong> during business hours.
-                      </p>
-                      <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #e2e8f0;">
-                        Once verified, you will receive a second email granting you direct access to download your software from Google Drive.
-                      </p>
+                    <td style="padding: 0 40px 40px 40px;">
+                      <h3 style="margin: 0 0 15px 0; color: #ffffff; font-size: 18px; border-bottom: 1px solid #334155; padding-bottom: 10px;">Order Summary</h3>
+                      <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 10px;">
+                        ${invoiceItemsHtml}
+                        <tr>
+                          <td colspan="2" style="padding: 20px 0 0 0; text-align: right; font-weight: 700; color: #94a3b8; font-size: 16px;">Total Amount Paid:</td>
+                          <td style="padding: 20px 0 0 0; text-align: right; font-weight: 800; color: #38bdf8; font-size: 22px;">₹${total}</td>
+                        </tr>
+                      </table>
                     </td>
                   </tr>
 
                   <!-- Footer -->
                   <tr>
-                    <td style="background-color: #030712; padding: 25px 30px; text-align: center; border-top: 1px solid #1f2937;">
-                      <p style="margin: 0; color: #64748b; font-size: 13px;">
-                        &copy; ${new Date().getFullYear()} Imran Softwares. All rights reserved.<br>
-                        Thank you for trusting us with your software needs.
+                    <td style="background-color: #0b1120; padding: 30px 40px; text-align: center; border-top: 1px solid #1e293b;">
+                      <p style="margin: 0 0 10px 0; color: #64748b; font-size: 14px;">
+                        Need immediate assistance? <a href="https://t.me/imransoftwares" style="color: #00f2fe; text-decoration: none;">Contact us on Telegram</a>.
+                      </p>
+                      <p style="margin: 0; color: #475569; font-size: 12px;">
+                        &copy; ${new Date().getFullYear()} Imran Softkart. Premium Software Solutions.<br>
                       </p>
                     </td>
                   </tr>
+                  
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
                   
                 </table>
               </td>
@@ -189,7 +216,7 @@ app.post('/api/send-invoice', upload.single('screenshot'), async (req, res) => {
                         <tr><td style="padding: 8px 0;"><strong>Name:</strong></td> <td style="padding: 8px 0; color: #fff;">${name || 'N/A'}</td></tr>
                         <tr><td style="padding: 8px 0;"><strong>Email:</strong></td> <td style="padding: 8px 0; color: #38bdf8;">${email}</td></tr>
                         <tr><td style="padding: 8px 0;"><strong>WhatsApp:</strong></td> <td style="padding: 8px 0; color: #4ade80;">${whatsapp || 'N/A'}</td></tr>
-                        <tr><td style="padding: 8px 0;"><strong>UTR Number:</strong></td> <td style="padding: 8px 0;"><span style="background-color: #fde047; color: #000; padding: 4px 8px; border-radius: 4px; font-weight: bold;">${utr}</span></td></tr>
+                        <tr><td style="padding: 8px 0;"><strong>Drive Access Email:</strong></td> <td style="padding: 8px 0;"><span style="background-color: #fde047; color: #000; padding: 4px 8px; border-radius: 4px; font-weight: bold;">${driveEmail}</span></td></tr>
                       </table>
                     </td>
                   </tr>
@@ -213,8 +240,8 @@ app.post('/api/send-invoice', upload.single('screenshot'), async (req, res) => {
                   <tr>
                     <td style="background-color: #020617; padding: 25px 30px; text-align: center; border-top: 1px solid #1e293b;">
                       <p style="margin: 0; color: #94a3b8; font-size: 14px;">
-                        Check the attached screenshot to verify the UTR.<br><br>
-                        <strong>Next Step:</strong> Go to Google Drive and share the folder with <strong>${email}</strong>.
+                        Check the attached screenshot to verify the payment.<br><br>
+                        <strong>Next Step:</strong> Go to Google Drive and share the folder with <strong>${driveEmail}</strong>.
                       </p>
                     </td>
                   </tr>
@@ -262,7 +289,7 @@ app.post('/api/send-invoice', upload.single('screenshot'), async (req, res) => {
             email,
             whatsapp,
             products: productNames,
-            utr,
+            driveEmail,
             total,
             screenshotBase64,
             screenshotMimeType,
@@ -283,13 +310,144 @@ app.post('/api/send-invoice', upload.single('screenshot'), async (req, res) => {
       }
     }
 
-    if (emailSuccess) {
-      res.status(200).json({ success: true, message: 'Order processed successfully' });
-    } else {
-      res.status(207).json({ success: true, message: 'Order saved to sheets, but emails failed', error: emailError });
+    // Send data to Telegram if configured
+    if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
+      try {
+        const productNames = cart.map(item => item.name).join(', ');
+        const telegramMessage = `🚨 *NEW ORDER RECEIVED* 🚨\n\n👤 *Customer Details:*\nName: ${name || 'N/A'}\nEmail: ${email}\nWhatsApp: ${whatsapp || 'N/A'}\nDrive Email: ${driveEmail}\n\n🛒 *Order Summary:*\nProducts: ${productNames}\n💰 *Total:* ₹${total}`;
+
+        let telegramResponse;
+        if (req.file) {
+          const formData = new FormData();
+          formData.append('chat_id', process.env.TELEGRAM_CHAT_ID);
+          formData.append('caption', telegramMessage);
+          formData.append('parse_mode', 'Markdown');
+          const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
+          formData.append('photo', blob, req.file.originalname);
+
+          telegramResponse = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+            method: 'POST',
+            body: formData
+          });
+        } else {
+          telegramResponse = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: process.env.TELEGRAM_CHAT_ID,
+              text: telegramMessage + '\n\n⚠️ No Payment Screenshot Provided.',
+              parse_mode: 'Markdown'
+            })
+          });
+        }
+
+        if (telegramResponse.ok) {
+          console.log('Successfully sent notification to Telegram');
+        } else {
+          console.error('Failed to send Telegram notification:', await telegramResponse.text());
+        }
+      } catch (err) {
+        console.error('Error sending Telegram notification:', err);
+      }
     }
+
+    if (emailSuccess) {
+          console.log('Order processed successfully (background)');
+        } else {
+          console.log('Order saved to sheets, but emails failed (background):', emailError);
+        }
+      } catch (backgroundError) {
+        console.error('Background processing error:', backgroundError);
+      }
+    })();
+
   } catch (error) {
     console.error('Unexpected server error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+});
+
+// New Endpoint: Admin sends Drive Access email to User
+app.post('/api/send-access', async (req, res) => {
+  try {
+    const { email, name, driveLink } = req.body;
+
+    if (!email || !driveLink) {
+      return res.status(400).json({ error: 'Email and Drive Link are required' });
+    }
+
+    const accessMailOptions = {
+      from: `"Imran Softkart" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: '🎉 Your Software Access is Ready! - Imran Softkart',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <body style="margin: 0; padding: 0; background-color: #030712; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #030712; padding: 40px 10px;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #0f172a; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #1e293b;">
+                  
+                  <!-- Banner -->
+                  <tr>
+                    <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 30px; text-align: center;">
+                      <div style="background-color: rgba(255,255,255,0.2); width: 60px; height: 60px; border-radius: 50%; display: inline-block; line-height: 60px; font-size: 30px; margin-bottom: 15px;">🔓</div>
+                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase;">Access Granted!</h1>
+                      <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px; font-weight: 600;">Your software is ready for download.</p>
+                    </td>
+                  </tr>
+
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding: 40px 40px 30px 40px;">
+                      <h2 style="margin: 0 0 15px 0; color: #34d399; font-size: 22px;">Hello ${name || 'there'},</h2>
+                      <p style="margin: 0 0 25px 0; font-size: 16px; line-height: 1.8; color: #cbd5e1;">
+                        Great news! We have successfully verified your payment. You have been granted full, lifetime access to your purchased software.
+                      </p>
+                      
+                      <!-- Call to Action -->
+                      <div style="text-align: center; margin: 40px 0; padding: 30px; background-color: #1e293b; border-radius: 12px; border: 1px dashed #475569;">
+                        <p style="margin: 0 0 20px 0; font-size: 15px; color: #94a3b8;">Click the secure link below to access your Google Drive folder:</p>
+                        <a href="${driveLink}" style="background: linear-gradient(135deg, #00f2fe 0%, #3b82f6 100%); color: #ffffff; padding: 16px 36px; text-decoration: none; border-radius: 50px; font-size: 18px; font-weight: bold; display: inline-block; box-shadow: 0 10px 20px rgba(0, 242, 254, 0.25); text-transform: uppercase; letter-spacing: 1px;">
+                          Download Software Now
+                        </a>
+                      </div>
+
+                      <div style="background-color: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 10px;">
+                        <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #fbbf24;">
+                          <strong>Important Note:</strong> You must be logged into Google with the email you provided at checkout to view these files.
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background-color: #0b1120; padding: 30px 40px; text-align: center; border-top: 1px solid #1e293b;">
+                      <p style="margin: 0 0 10px 0; color: #64748b; font-size: 14px;">
+                        Having trouble? <a href="https://t.me/mistersystemservice" style="color: #34d399; text-decoration: none;">Reach out to our support team</a>.
+                      </p>
+                      <p style="margin: 0; color: #475569; font-size: 12px;">
+                        &copy; ${new Date().getFullYear()} Imran Softkart. All rights reserved.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `
+    };
+
+    await transporter.sendMail(accessMailOptions);
+    res.status(200).json({ success: true, message: 'Drive access email sent to user successfully!' });
+  } catch (error) {
+    console.error('Error sending access email:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -305,6 +463,10 @@ app.get(/(.*)/, (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production' || process.env.RENDER) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+export default app;

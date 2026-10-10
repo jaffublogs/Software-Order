@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "start": "node server.js",
     "backend": "node server.js",
     "build": "vite build",
     "lint": "oxlint",
@@ -19,6 +20,7 @@
     "nodemailer": "^10.0.15",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-hot-toast": "^2.6.1",
     "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
