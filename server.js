@@ -23,7 +23,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-app.post('/api/send-invoice', upload.single('screenshot'), async (req, res) => {
+app.post(['/api/send-invoice', '/send-invoice'], upload.single('screenshot'), async (req, res) => {
   try {
     const { email, name, whatsapp, driveEmail, cartData, total } = req.body;
     const cart = JSON.parse(cartData);
@@ -32,12 +32,12 @@ app.post('/api/send-invoice', upload.single('screenshot'), async (req, res) => {
       return res.status(400).json({ error: 'Email is required' });
     }
 
-    // Immediately respond to the client to make the UI feel fast
-    res.status(200).json({ success: true, message: 'Order is being processed in the background' });
-
-    // Process the rest asynchronously in the background
-    (async () => {
-      try {
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.error('ERROR: SMTP_USER or SMTP_PASS is missing in environment variables!');
+      return res.status(500).json({ 
+        error: 'Email configuration missing on server. Please set SMTP_USER and SMTP_PASS in Vercel/Render dashboard.' 
+      });
+    }
         // Create beautiful items table for invoice
     const invoiceItemsHtml = cart.map(item => `
       <tr>
@@ -352,25 +352,26 @@ app.post('/api/send-invoice', upload.single('screenshot'), async (req, res) => {
     }
 
     if (emailSuccess) {
-          console.log('Order processed successfully (background)');
-        } else {
-          console.log('Order saved to sheets, but emails failed (background):', emailError);
-        }
-      } catch (backgroundError) {
-        console.error('Background processing error:', backgroundError);
-      }
-    })();
-
-  } catch (error) {
-    console.error('Unexpected server error:', error);
-    if (!res.headersSent) {
-      res.status(500).json({ success: false, error: error.message });
+      console.log('Order processed and emails sent successfully.');
+      return res.status(200).json({ 
+        success: true, 
+        message: 'Order processed and emails sent successfully!' 
+      });
+    } else {
+      console.error('Failed to send invoice email:', emailError);
+      return res.status(500).json({ 
+        success: false, 
+        error: `Order recorded, but email could not be sent: ${emailError || 'Unknown error'}` 
+      });
     }
+  } catch (error) {
+    console.error('Unexpected server error in send-invoice:', error);
+    return res.status(500).json({ success: false, error: error.message });
   }
 });
 
 // New Endpoint: Admin sends Drive Access email to User
-app.post('/api/send-access', async (req, res) => {
+app.post(['/api/send-access', '/send-access'], async (req, res) => {
   try {
     const { email, name, driveLink } = req.body;
 
@@ -463,7 +464,7 @@ app.get(/(.*)/, (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-if (process.env.NODE_ENV !== 'production' || process.env.RENDER) {
+if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
