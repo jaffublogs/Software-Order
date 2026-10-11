@@ -83,7 +83,7 @@ const Footer = () => (
 const ProductCard = ({ product }) => (
   <div className="product-card">
     <Link to={`/product/${product.id}`} className="product-img-wrapper">
-      <img src={product.image} alt={product.name} className="product-img" loading="lazy" />
+      <img src={product.image} alt={product.name} className="product-img" loading="lazy" decoding="async" width="200" height="200" />
     </Link>
     <div className="product-info">
       <div className="product-category">PRE-ACTIVATED</div>
@@ -199,7 +199,7 @@ const ProductDetail = ({ addToCart }) => {
     <div className="container page-container">
       <div className="product-detail-layout">
         <div className="product-detail-img-box">
-          <img src={product.image} alt={product.name} className="product-detail-img" />
+          <img src={product.image} alt={product.name} className="product-detail-img" decoding="async" width="480" height="480" />
         </div>
         <div className="product-detail-info">
           <div className="product-category">{product.category}</div>

@@ -16,11 +16,16 @@ app.use(express.json());
 const upload = multer({ storage: multer.memoryStorage() });
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // use SSL
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  tls: {
+    rejectUnauthorized: false
+  }
 });
 
 app.post(['/api/send-invoice', '/send-invoice'], upload.single('screenshot'), async (req, res) => {
@@ -61,7 +66,8 @@ app.post(['/api/send-invoice', '/send-invoice'], upload.single('screenshot'), as
     const mailOptions = {
       from: `"Imran Softkart" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: 'Order Received & Under Review - Imran Softkart',
+      subject: `Order Received & Under Review - Imran Softkart (${productNames})`,
+      text: `Hello ${name || 'Customer'},\n\nThank you for choosing Imran Softkart! We have received your order for: ${productNames}.\nTotal Amount Paid: INR ${total}\nGoogle Drive Access Email: ${driveEmail}\n\nOur team is currently verifying your payment. Your download access will be granted shortly.\n\nNeed help? Contact Telegram: https://t.me/mistersystemservice\n\nImran Softkart`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -156,20 +162,13 @@ app.post(['/api/send-invoice', '/send-invoice'], upload.single('screenshot'), as
                   <tr>
                     <td style="background-color: #0b1120; padding: 30px 40px; text-align: center; border-top: 1px solid #1e293b;">
                       <p style="margin: 0 0 10px 0; color: #64748b; font-size: 14px;">
-                        Need immediate assistance? <a href="https://t.me/imransoftwares" style="color: #00f2fe; text-decoration: none;">Contact us on Telegram</a>.
+                        Need immediate assistance? <a href="https://t.me/mistersystemservice" style="color: #00f2fe; text-decoration: none;">Contact us on Telegram</a>.
                       </p>
                       <p style="margin: 0; color: #475569; font-size: 12px;">
                         &copy; ${new Date().getFullYear()} Imran Softkart. Premium Software Solutions.<br>
                       </p>
                     </td>
                   </tr>
-                  
-                </table>
-              </td>
-            </tr>
-          </table>
-        </body>
-        </html>
                   
                 </table>
               </td>

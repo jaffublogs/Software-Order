@@ -5,6 +5,9 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   server: {
-    allowedHosts: true, // true allows all hosts, fixing ngrok issues even if the URL changes
+    allowedHosts: true,
   },
+  build: {
+    cssMinify: true,
+  }
 })
