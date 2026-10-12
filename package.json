@@ -9,6 +9,7 @@
     "backend": "node server.js",
     "build": "vite build",
     "lint": "oxlint",
+    "test:emails": "node scripts/test-templates.js",
     "preview": "vite preview"
   },
   "dependencies": {
